@@ -12,6 +12,7 @@ import random
 
 
 BOARD_SPOTS = 9
+FIRST_POSSIBLE_WIN = 5
 WINNING_COMBINATIONS = [
     [0, 1, 2],
     [3, 4, 5],
@@ -103,7 +104,7 @@ To do so, type the number that corresponds to the
         self.player = Player()
         self.play_again = True
         self.player_goes_first = True
-        self.round_count = 0
+        self.turn_count = 0
         self.ties = 0
         self.wins = 0
         self.losses = 0
@@ -152,7 +153,7 @@ To do so, type the number that corresponds to the
                 print("Please type either y or n.")
 
     def new_game(self):
-        self.round_count = 0
+        self.turn_count = 0
         self.computer = Computer(self.get_difficulty())
         self.choose_x_or_o()
         self.board = Board()
@@ -166,57 +167,79 @@ To do so, type the number that corresponds to the
             if checker == 3:
                 return True
         return False
+    
+    def turn_end(self, player):
+        self.turn_count += 1
+        if self.turn_count >= FIRST_POSSIBLE_WIN:
+            if self.check_for_winner(player.symbol):
+                self.board.game_over = True
+                if isinstance(player, Computer):
+                    print("\nComputer wins!")
+                    self.losses += 1
+                    return True
+                else:
+                    print("\nYou win!")
+                    self.wins += 1
+                    return True
+            elif self.turn_count == BOARD_SPOTS:
+                self.board.game_over = True
+                print("\nYou tied!")
+                self.ties += 1
+                return True
+        return False
 
     def player_goes_first_rounds(self):
         # Player turn
         self.board.update_board(self.player.take_turn(self.board), self.player.symbol)
-        if self.round_count >= 3:
-            if self.check_for_winner(self.player.symbol):
-                self.board.game_over = True
-                self.wins += 1
-                return
+        if self.turn_end(self.player):
+            return
+
         # Computer turn
         self.board.update_board(self.computer.take_turn(self.board), self.computer.symbol)
-        if self.round_count >= 3:
-            if self.check_for_winner(self.computer.symbol):
-                self.board.game_over = True
-                self.wins += 1
-                return
-        self.round_count += 1
+        if self.turn_end(self.computer):
+            return
 
     def computer_goes_first_rounds(self):
         # Computer turn
         self.board.update_board(self.computer.take_turn(self.board), self.computer.symbol)
-        if self.round_count >= 3:
-            if self.check_for_winner(self.computer.symbol):
-                self.board.game_over = True
-                self.wins += 1
-                return
+        if self.turn_end(self.computer):
+            return
+        
         # Player turn
         self.board.update_board(self.player.take_turn(self.board), self.player.symbol)
-        if self.round_count >= 3:
-            if self.check_for_winner(self.player.symbol):
-                self.board.game_over = True
-                self.wins += 1
-                return
-        self.round_count += 1
+        if self.turn_end(self.player):
+            return
+        
+    def print_scores(self):
+        print(f"Wins: {self.wins}")
+        print(f"Losses: {self.losses}")
+        print(f"Ties: {self.ties}")
 
 
 
 def main():
     tictactoe = Game()
+
     while tictactoe.play_again:
+        # Initialize everything for new round
         tictactoe.new_game()
         player_symbol = tictactoe.player.symbol
+
         while not tictactoe.board.game_over:
             # Player goes first if X
             if player_symbol == "X":
+                # Each player takes their turns till game ending state
                 tictactoe.player_goes_first_rounds()
+            # Computer goes first if O
             else:
                 tictactoe.computer_goes_first_rounds()
-        print(f"Wins: {tictactoe.wins}")
-        print(f"Losses: {tictactoe.losses}")
-        print(f"Ties: {tictactoe.ties}")
+    
+        tictactoe.print_scores()
+    
+        tictactoe.set_play_again()
+
+    print("Thanks for playing!")
+    
 
 
 
